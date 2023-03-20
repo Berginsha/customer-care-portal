@@ -1,9 +1,9 @@
 #!/home/fcintern002/miniconda3/bin/python3
 
 from flask_mail import Mail, Message
-from flask import Flask, render_template, request, redirect, url_for, session,flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import ibm_db
-from app import str_gen
+from app import config
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'h7ju89ktgjh45'
@@ -132,7 +132,7 @@ def dashboard():
 @app.route('/success', methods=['POST', 'GET'])
 def success():
     if request.method == "POST":
-        ticket = session['ticket'] = str_gen.alphanumeric()
+        ticket = session['ticket'] = config.alphanumeric()
         print(ticket, session['ticket'])
         query = request.form['query']
         sql = "UPDATE user SET QUERY=?,TICKET=?,REVIEW_STATUS=0 WHERE USERNAME=?"
@@ -145,7 +145,7 @@ def success():
             msg = 'Success ! Your Ticket Nno is :', ticket, 'You can now return to the home page'
             return render_template('success.html', msg=msg)
         else:
-            msg = 'Error Submitting your Query'
+            msg = 'Error Submitting your Query.Please Try again'
             return render_template('success.html', msg=msg)
 
 
