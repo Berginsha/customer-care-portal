@@ -1,6 +1,5 @@
 Dockerfile
 IBM-DB2-schema.sql
-./app/config.py
-app/__pycache__/*
+app/*
 deployment.yaml
 service.yaml
