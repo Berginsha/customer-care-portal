@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import ibm_db
 from app import config
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'h7ju89ktgjh45'
 conn = ''
