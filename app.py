@@ -1,18 +1,16 @@
-#!/home/fcintern002/miniconda3/bin/python3
-
 from flask_mail import Mail, Message
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-import ibm_db
+from flask import Flask, render_template, request, redirect, url_for, session
 from app import config
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'h7ju89ktgjh45'
-conn = ''
+app.config['SECRET_KEY'] = 'helloworld'
+conn = config.mysql_connect()
+cursor = conn.cursor()
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = ''
-app.config['MAIL_PASSWORD'] = ''
+app.config['MAIL_USERNAME'] = config.mailid()
+app.config['MAIL_PASSWORD'] = config.mailpass()
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
@@ -30,22 +28,22 @@ def register():
         name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
-        phone = request.form.get('phone')
-        stmt = ibm_db.prepare(conn, 'SELECT * FROM USER WHERE USERNAME=?')
-        ibm_db.bind_param(stmt, 1, name)
-        ibm_db.execute(stmt)
-        rs = ibm_db.fetch_assoc(stmt)
+        password1 = request.form.get('password1')
+        if password != password1:
+            msg = "Passwords do not match"
+            return render_template('register.html', msg=msg)
+        cursor.execute(f'select * from user where username="{name}"')
+        rs = cursor.fetchall()
         print(rs)
         if rs:
-            flash('An account with this username/Email already Exists')
-            return render_template('register.html')
+            msg = 'Account already Exists'
+            return render_template('register.html', msg=msg)
         else:
-            reg_stmt = ibm_db.prepare(
-                conn, 'INSERT INTO user ("USERNAME","EMAIL","PASSWORD") VALUES(?,?,?)')
-            ibm_db.bind_param(reg_stmt, 1, name)
-            ibm_db.bind_param(reg_stmt, 2, email)
-            ibm_db.bind_param(reg_stmt, 3, password)
-            ibm_db.execute(reg_stmt)
+            sql = "insert into user (username, email, password) VALUES(%s,%s,%s)"
+            values = (name, email, password)
+            val = cursor.execute(sql, values)
+            conn.commit()
+            print(val)
             msg = 'Successfully Registered'
             return render_template('register.html', msg=msg)
     else:
@@ -59,64 +57,50 @@ def login():
         agent = list()
         name = request.form['name']
         password = request.form['password']
-        log_stmt = ibm_db.prepare(
-            conn, 'SELECT * FROM user WHERE username=? and password=?')
-        ibm_db.bind_param(log_stmt, 1, name)
-        ibm_db.bind_param(log_stmt, 2, password)
-        ibm_db.execute(log_stmt)
-        rs = ibm_db.fetch_assoc(log_stmt)
+        values = (name, password)
+        sql = "select * from user where username=%s and password=%s"
+        cursor.execute(sql, values)
+        rs = cursor.fetchall()
         if rs:
             session['role'] = 'user'
             session['customer'] = rs
             print(rs)
             return render_template('dashboard.html')
-        log_stmt = ibm_db.prepare(
-            conn, 'SELECT * FROM agent WHERE username=? and password=?')
-        ibm_db.bind_param(log_stmt, 1, name)
-        ibm_db.bind_param(log_stmt, 2, password)
-        ibm_db.execute(log_stmt)
-        rs = ibm_db.fetch_assoc(log_stmt)
+        sql = "select * from agent where username=%s and password=%s"
+        cursor.execute(sql, values)
+        rs = cursor.fetchall()
         if rs:
-            cms = ibm_db.exec_immediate(conn, 'SELECT * FROM user')
-            agt = ibm_db.exec_immediate(conn, 'SELECT * FROM agent')
-            customers = ibm_db.fetch_assoc(cms)
-            agents = ibm_db.fetch_assoc(agt)
-            while customers:
-                customer.append(customers)
-                customers = ibm_db.fetch_assoc(cms)
-            while agents:
-                agent.append(agents)
-                agents = ibm_db.fetch_assoc(agt)
-            print(customer)
-            print(agent)
+            cursor.execute('select * from user')
+            customers = cursor.fetchall()
+            cursor.execute('select * from agent')
+            agents = cursor.fetchall()
+            for cus in customers:
+                customer.append(cus)
+            for agt in agents:
+                agent.append(agt)
+            print(customer, agent)
             session['role'] = 'agent'
-            session['name'] = rs['USERNAME']
+            session['name'] = rs[0][0]
             session['customer'] = customer
             session['agent'] = agent
             return render_template('dashboard.html')
-        log_stmt = ibm_db.prepare(
-            conn, 'SELECT * FROM admin WHERE username=? and password=?')
-        ibm_db.bind_param(log_stmt, 1, name)
-        ibm_db.bind_param(log_stmt, 2, password)
-        ibm_db.execute(log_stmt)
-        rs = ibm_db.fetch_assoc(log_stmt)
+        sql = "select * from admin where username=%s and password=%s"
+        cursor.execute(sql, values)
+        rs = cursor.fetchone()
         if rs:
-            cms = ibm_db.exec_immediate(conn, 'SELECT * FROM user')
-            agt = ibm_db.exec_immediate(conn, 'SELECT * FROM agent')
-            customers = ibm_db.fetch_assoc(cms)
-            agents = ibm_db.fetch_assoc(agt)
-            while customers:
-                customer.append(customers)
-                customers = ibm_db.fetch_assoc(cms)
-            while agents:
-                agent.append(agents)
-                agents = ibm_db.fetch_assoc(agt)
+            cursor.execute("select * from user")
+            customers = cursor.fetchall()
+            cursor.execute("select * from agent")
+            agents = cursor.fetchall()
+            for cus in customers:
+                customer.append(cus)
+            for agt in agents:
+                agent.append(agt)
             print(customer)
             print(agent)
             session['role'] = 'admin'
             session['customer'] = customer
             session['agent'] = agent
-
             return render_template('dashboard.html', agent=agent, customer=customer)
         else:
             msg = 'UID/Password is incorrect'
@@ -134,19 +118,18 @@ def dashboard():
 def success():
     if request.method == "POST":
         ticket = session['ticket'] = config.alphanumeric()
-        print(ticket, session['ticket'])
         query = request.form['query']
-        sql = "UPDATE user SET QUERY=?,TICKET=?,REVIEW_STATUS=0 WHERE USERNAME=?"
-        out = ibm_db.prepare(conn, sql)
-        ibm_db.bind_param(out, 1, query)
-        ibm_db.bind_param(out, 2, session['ticket'])
-        ibm_db.bind_param(out, 3, session['customer']['USERNAME'])
-        status = ibm_db.execute(out)
+        print(ticket, query, session['customer'][0][0])
+        print(session['customer'])
+        sql = "UPDATE user SET QUERY=%s,TICKET=%s,REVIEW_STATUS='0' where USERNAME=%s"
+        status = cursor.execute(
+            sql, (query, session['ticket'], session['customer'][0][0]))
+        conn.commit()
         if status:
             msg = 'Success ! Your Ticket Nno is :', ticket, 'You can now return to the home page'
             return render_template('success.html', msg=msg)
         else:
-            msg = 'Error Submitting your Query.Please Try again'
+            msg = 'Error Submitting your Query'
             return render_template('success.html', msg=msg)
 
 
@@ -161,18 +144,20 @@ def admin_query():
     agent = request.form.getlist('agent_name')
     usr_name = request.form.getlist('cus_name')
     emails = request.form.getlist('email')
+    print(agent, usr_name, emails)
     for i in range(0, len(agent)):
         if agent[i] != 'none':
             try:
-                qr = ibm_db.prepare(
-                    conn, "UPDATE USER SET ASSIGNED_AGENT=? WHERE USERNAME=?")
-                ibm_db.bind_param(qr, 1, agent[i])
-                ibm_db.bind_param(qr, 2, usr_name[i])
-                result = ibm_db.execute(qr)
+                print(agent[i], usr_name[i], emails[i])
+                sql = "update user set assigned_agent=%s where username=%s"
+                cursor.execute(
+                    sql, (agent[i], usr_name[i]))
+                print(sql)
+                conn.commit()
                 print(agent[i], usr_name[i], emails[i])
                 msg = Message(
                     f'Hello {usr_name[i]}',
-                    sender='shagish.111937@sxcce.edu.in',
+                    sender='jebajeba7907@gmail.com',
                     recipients=[f'{emails[i]}']
                 )
                 msg.body = f'Agent named {agent[i]} alloted to your query.{agent[i]} will be responding you soon within 24 hrs.'
@@ -192,12 +177,9 @@ def agent_submit_reply():
     for i in range(0, len(names)):
         if not text[i] == '':
             try:
-                sql = 'UPDATE USER SET REPLY=?,REVIEW_STATUS=1 WHERE USERNAME=?'
-                query = ibm_db.prepare(conn, sql)
-                ibm_db.bind_param(query, 1, text[i])
-                ibm_db.bind_param(query, 2, names[i])
-                ibm_db.execute(query)
-
+                sql = "update user set reply=%s,review_status='1' where username=%s"
+                cursor.execute(sql, (text[i], names[i]))
+                conn.commit()
                 msg = 'Replies sent successfully'
             except:
                 msg = 'Error Sending replies'

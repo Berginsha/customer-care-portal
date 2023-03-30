@@ -12,19 +12,19 @@ Dashboard
 </center>
 {% if session['role'] =='user' %}
 <center>
-    {% set customer = session['customer'] %}
-    <h1 class="heading">Hello {{ customer['USERNAME'] }}</h1>
-    {% if customer['QUERY'] =='none' %}
+    {% for customer in session['customer'] %}
+    <h1 class="heading">Hello {{ customer[0] }}</h1>
+    {% if customer[3] == None %}
     <h1>You Haven't made any Queries</h1>
     {% else %}
     <div>
         <h1>Your Previous Query :</h1>
-        <div>{{ customer['QUERY'] }} </div>
+        <div>{{ customer[3] }} </div>
         <h1>Your Ticket:</h1>
-        <div>{{ customer['TICKET'] }}</div>
-        {% if customer['REVIEW_STATUS'] == 1 %}
+        <div>{{ customer[5] }}</div>
+        {% if customer[4] == 1 %}
         <h1>Reply from the Agent:</h1>
-        <div>{{ customer['REPLY'] }}</div>
+        <div>{{ customer[7] }}</div>
         {% else %}
         <h1>Review Status:</h1>
         <div>Not Yet Reviewed</div>
@@ -32,6 +32,7 @@ Dashboard
     </div>
     <hr>
     {% endif %}
+    {% endfor  %}
     <div>
         <div id="add_elem">
             <button id="form" class="btn btn-success" onclick="form_create()">Create Query</button>
@@ -52,20 +53,20 @@ Dashboard
                 <th scope="col">Reply</th>
             </tr>
             {% for cus in session['customer'] %}
-            {% if cus['ASSIGNED_AGENT'] == session['name'] and cus['REPLY'] == 'none' and cus['REVIEW_STATUS'] != 1 %}
+            {% if cus[6] == session['name'] and cus[4] == 0 %}
 
             <tr>
 
                 <td>
                     <select name="name">
-                        <option value="{{ cus['USERNAME'] }}">{{ cus['USERNAME'] }}</option>
+                        <option value="{{ cus[0] }}">{{ cus[0] }}</option>
                     </select>
                 </td>
                 <td>
-                    {{ cus['TICKET'] }}
+                    {{ cus[5] }}
                 </td>
                 <td>
-                    {{ cus['QUERY'] }}
+                    {{ cus[3] }}
                 </td>
                 <td><textarea name="text" cols="50" rows="4"></textarea></td>
             </tr>
@@ -102,40 +103,40 @@ Dashboard
                 </tr>
 
                 {% for cus in session['customer'] %}
-                {% if cus['REVIEW_STATUS'] == 0 and not cus['QUERY'] == 'none' %}
+                {% if cus[4] == 0 and not cus[3] == None %}
 
                 <tr>
 
                     <td>
                         <select name="cus_name">
-                            <option value="{{ cus['USERNAME'] }}">{{ cus['USERNAME'] }}</option>
+                            <option value="{{ cus[0] }}">{{ cus[0] }}</option>
                         </select>
                     </td>
                     <td>
-                        {{ cus['TICKET'] }}
+                        {{ cus[5] }}
                     </td>
                     <td>
                         <select name="email">
-                            <option value="{{ cus['EMAIL'] }}">{{ cus['EMAIL'] }}</option>
+                            <option value="{{ cus[1] }}">{{ cus[1] }}</option>
                         </select>
                     </td>
 
                     <td>
-                        {{ cus['QUERY'] }}
+                        {{ cus[3] }}
                     </td>
                     <td>
-                        {% if cus['REVIEW_STATUS'] == 1 %}
+                        {% if cus[4] == 1 %}
                         Reviewed
                         {% else %}
                         Not yet Reviewed
                         {% endif %}
                     </td>
-                    <td>{{ cus['ASSIGNED_AGENT'] }}</td>
+                    <td>{{ cus[6] }}</td>
                     <td>
                         <select name="agent_name">
                             <option value="none">Select agent</option>
                             {% for agt in session['agent'] %}
-                            <option value="{{ agt['USERNAME'] }}">{{ agt['USERNAME'] }}</option>
+                            <option value="{{ agt[0] }}">{{ agt[0] }}</option>
                             {% endfor %}
 
                         </select>
@@ -161,7 +162,7 @@ Dashboard
         {% for agt in agent %}
         <tr>
             <td>
-                {{ agt['USERNAME'] }}
+                {{ agt[0] }}
             </td>
         </tr>
         {% endfor %}
