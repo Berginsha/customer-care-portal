@@ -1,0 +1,22 @@
+{% extends 'base.html' %} {%block title%} Complaints {%endblock%} {%block
+content%}
+<div class="container pd-20">
+  <h1 style="margin-top: 100px">Complaints page</h1>
+  <form action="{{url_for('complaint')}}" method="POST">
+    <div class="form-group">
+      <label class="col-md-5">Enter the topic of the complaint:</label
+      ><input class="form-control col-md-10" name="topic" type="text" />
+      <label class="col-md-5">Describe your problem:</label
+      ><input class="form-control col-md-10" name="desc" type="text" />
+      <input class="btn btn-success" type="submit" value="submit" />
+      <input class="btn btn-danger" type="reset" value="clear" />
+    </div>
+    <div>
+      <a href="{{url_for('home')}}" class="btn btn-primary">< Back to Home</a>
+    </div>
+    <center>
+      <div class="text-danger">The bank with which your last query was made will be used here</div>
+    </center>
+  </form>
+</div>
+{%endblock%}

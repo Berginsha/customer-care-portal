@@ -1,19 +1,35 @@
-from flask_mail import Mail, Message
-from flask import Flask, render_template, request, redirect, url_for, session
-from app import config
+import pymysql.cursors
+import os
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from app import mailing, random_generator, mail_templates
+import json
 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'helloworld'
-conn = config.mysql_connect()
-cursor = conn.cursor()
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = config.mailid()
-app.config['MAIL_PASSWORD'] = config.mailpass()
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-mail = Mail(app)
+connection = pymysql.connect(
+    host=os.getenv('mysql_db_endpoint'),
+    user=os.getenv('mysql_db_username'),
+    passwd=os.getenv('mysql_db_password'),
+    port=3306,
+    db=os.getenv('mysql_db_database'),
+    cursorclass=pymysql.cursors.DictCursor)
+cursor = connection.cursor()
+
+
+@app.route('/healthz')
+def health():
+    test = cursor.execute('SELECT VERSION()')
+    if test:
+        return render_template('healthy.html')
+    else:
+        return '', 500
+
+
+def getJson():
+    with open('data.json') as f:
+        file = json.load(f)
+        return file['bank_name']
 
 
 @app.route('/')
@@ -25,166 +41,222 @@ def home():
 def register():
     if request.method == "POST":
         global rs
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
+        session['name'] = name = request.form.get('name')
+        session['email'] = email = request.form.get('email')
+        session['password'] = password = request.form.get('password')
         password1 = request.form.get('password1')
         if password != password1:
-            msg = "Passwords do not match"
-            return render_template('register.html', msg=msg)
+            flash('passwords do not match')
+            return redirect(url_for('register'))
         cursor.execute(f'select * from user where username="{name}"')
         rs = cursor.fetchall()
         print(rs)
         if rs:
-            msg = 'Account already Exists'
-            return render_template('register.html', msg=msg)
+            flash('Account already Exists')
+            return redirect(url_for('register'))
         else:
-            sql = "insert into user (username, email, password) VALUES(%s,%s,%s)"
-            values = (name, email, password)
-            val = cursor.execute(sql, values)
-            conn.commit()
-            print(val)
-            msg = 'Successfully Registered'
-            return render_template('register.html', msg=msg)
+            session['otp'] = random_generator.generate_otp()
+            flash('An OTP has been sent to your email !!')
+            try:
+                context = mail_templates.mail_otp(
+                    session['name'], session['otp'])
+                mailing.mail("Register @ BANKARE", session['email'],
+                             context['subject'], context['html_content'])
+            except:
+                flash('Error sending OTP')
+            print(session['email'], context['subject'],
+                  context['html_content'])
+            return redirect(url_for('verify'))
     else:
         return render_template('register.html')
+
+
+@app.route('/verify', methods=['POST', 'GET'])
+def verify():
+    if request.method == "POST":
+        otp = request.form.get('otp')
+        if session['otp'] == otp:
+            sql = "insert into user (username, email, password) values(%s,%s,%s)"
+            values = (session['name'], session['email'], session['password'])
+            cursor.execute(sql, values)
+            connection.commit()
+            flash('Successfully Registered,Please Login!!')
+            return redirect(url_for('login'))
+        else:
+            flash('Invalid OTP')
+            return redirect(url_for('verify'))
+    else:
+        return render_template('verify.html')
 
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == "POST":
-        customer = list()
-        agent = list()
         name = request.form['name']
         password = request.form['password']
         values = (name, password)
-        sql = "select * from user where username=%s and password=%s"
+        sql = "select user.*,bank.bank_email from user inner join bank on bank=user.bank where username=%s and password=%s"
         cursor.execute(sql, values)
-        rs = cursor.fetchall()
+        rs = cursor.fetchone()
         if rs:
+            session['logged_in'] = True
             session['role'] = 'user'
             session['customer'] = rs
             print(rs)
-            return render_template('dashboard.html')
+            return redirect(url_for('dashboard'))
         sql = "select * from agent where username=%s and password=%s"
         cursor.execute(sql, values)
-        rs = cursor.fetchall()
+        rs = cursor.fetchone()
         if rs:
+            session['logged_in'] = True
             cursor.execute('select * from user')
             customers = cursor.fetchall()
             cursor.execute('select * from agent')
             agents = cursor.fetchall()
-            for cus in customers:
-                customer.append(cus)
-            for agt in agents:
-                agent.append(agt)
-            print(customer, agent)
+            print(customers, agents)
             session['role'] = 'agent'
-            session['name'] = rs[0][0]
-            session['customer'] = customer
-            session['agent'] = agent
-            return render_template('dashboard.html')
+            session['name'] = rs['username']
+            session['customer'] = customers
+            session['agent'] = rs
+            session['bank'] = getJson()
+            print(
+                f'''session role:{session['role']}\n
+                agent name:{session['name']}\n
+                all customers:{session['customer']}\n
+                all_agents:{session['agent']}\n
+                bank detains:{session['bank']}''')
+            return redirect(url_for('dashboard'))
         sql = "select * from admin where username=%s and password=%s"
         cursor.execute(sql, values)
         rs = cursor.fetchone()
         if rs:
+            session['logged_in'] = True
             cursor.execute("select * from user")
             customers = cursor.fetchall()
             cursor.execute("select * from agent")
             agents = cursor.fetchall()
-            for cus in customers:
-                customer.append(cus)
-            for agt in agents:
-                agent.append(agt)
-            print(customer)
-            print(agent)
+            print(customers, agents)
             session['role'] = 'admin'
-            session['customer'] = customer
-            session['agent'] = agent
-            return render_template('dashboard.html', agent=agent, customer=customer)
+            session['customer'] = customers
+            session['agent'] = agents
+            print(f'''role:{session['role']}\n
+            all customers:{session['customer']}\n
+            all agents: {session['agent']}''')
+            return redirect(url_for('dashboard'))
         else:
-            msg = 'UID/Password is incorrect'
-            return render_template('login.html', msg=msg)
+            flash('UID/Password is incorrect')
+            return redirect(url_for('login'))
     else:
         return render_template('login.html')
 
 
 @app.route('/dashboard', methods=['POST', 'GET'])
 def dashboard():
+    if not session.get('logged_in'):
+        flash('Please log in first')
+        return redirect(url_for('login'))
     return render_template('dashboard.html')
+
+
+@app.route('/user/complaints', methods=["POST", "GET"])
+def complaint():
+    if request.method == "POST":
+        topic = request.form['topic']
+        description = request.form['desc']
+        values = (session['customer']['username'],
+                  session['customer']['bank'], topic, description)
+        print(values)
+        try:
+            cursor.execute(
+                "insert into complaints values(%s,%s,%s,%s)", values)
+            mailing.mail(
+                f"{session['name'].capitalize()} from BANKARE", subject=topic, template=description)
+        except:
+            flash('error submitting complaint!!! Retry ')
+        flash('Complaint posted successfully')
+        connection.commit()
+        return redirect(url_for('home'))
+    else:
+        return render_template('complaint.html')
 
 
 @app.route('/success', methods=['POST', 'GET'])
 def success():
     if request.method == "POST":
-        ticket = session['ticket'] = config.alphanumeric()
+        ticket = session['ticket'] = random_generator.alphanumeric()
         query = request.form['query']
-        print(ticket, query, session['customer'][0][0])
-        print(session['customer'])
-        sql = "UPDATE user SET QUERY=%s,TICKET=%s,REVIEW_STATUS='0' where USERNAME=%s"
+        feature = request.form['feature']
+        bank = request.form['bank']
+        print(ticket, query, session['customer']['username'])
+        print(session['customer']['username'])
+        sql = "UPDATE user SET QUERY=%s,TICKET=%s,REVIEW_STATUS='0',bank=%s,query_category=%s,assigned_agent=NULL,reply=NULL where USERNAME=%s"
         status = cursor.execute(
-            sql, (query, session['ticket'], session['customer'][0][0]))
-        conn.commit()
+            sql, (query, session['ticket'], bank, feature, session['customer']['username']))
+        connection.commit()
         if status:
-            msg = 'Success ! Your Ticket Nno is :', ticket, 'You can now return to the home page'
-            return render_template('success.html', msg=msg)
+            flash(
+                f'Success ! Your Ticket id is {ticket}')
+            return redirect(url_for('dashboard'))
         else:
-            msg = 'Error Submitting your Query'
-            return render_template('success.html', msg=msg)
+            flash('Error Submitting your Query')
+            return redirect(url_for('dashboard'))
 
 
-@app.route('/redirect')
-def redir():
+@app.route('/logout')
+def logout():
+    session.clear()
     return redirect(url_for('home'))
 
 
 @app.route('/querying', methods=['POST'])
 def admin_query():
-    msg = ""
-    agent = request.form.getlist('agent_name')
-    usr_name = request.form.getlist('cus_name')
-    emails = request.form.getlist('email')
-    print(agent, usr_name, emails)
-    for i in range(0, len(agent)):
-        if agent[i] != 'none':
+    agents = tuple(request.form.getlist('agent_name'))
+    usernames = tuple(request.form.getlist('cus_name'))
+    emails = tuple(request.form.getlist('email'))
+    combined = zip(agents, usernames, emails)
+    print(combined)
+    for item in combined:
+        if item[0] != 'none':
             try:
-                print(agent[i], usr_name[i], emails[i])
+                print(item[0], item[1], item[2])
+                context = mail_templates.mail_agent_assigned(item[1], item[0])
+                mailing.mail(f"{session['role'].capitalize()} from BANKARE",
+                             item[2], context['subject'], context['html_content'])
                 sql = "update user set assigned_agent=%s where username=%s"
                 cursor.execute(
-                    sql, (agent[i], usr_name[i]))
-                print(sql)
-                conn.commit()
-                print(agent[i], usr_name[i], emails[i])
-                msg = Message(
-                    f'Hello {usr_name[i]}',
-                    sender='jebajeba7907@gmail.com',
-                    recipients=[f'{emails[i]}']
-                )
-                msg.body = f'Agent named {agent[i]} alloted to your query.{agent[i]} will be responding you soon within 24 hrs.'
-                mail.send(msg)
-                msg = 'Allotments updated Successfully'
+                    sql, (item[0], item[1]))
             except:
-                msg = "Error saving allotments/sending emails"
-    return render_template('done.html', msg=msg)
+                flash('Error saving allotments/sending emails')
+                return redirect(url_for('dashboard'))
+            connection.commit()
+            flash('Allotments updated Successfully')
+            return redirect(url_for('dashboard'))
+    # return render_template('done.html', msg=msg)
 
 
-@app.route('/executing...', methods=['POST', 'GET'])
+@app.route('/executing', methods=['POST', 'GET'])
 def agent_submit_reply():
-    names = request.form.getlist('name')
-    text = request.form.getlist('text')
-    print(names)
-    print(text)
-    for i in range(0, len(names)):
-        if not text[i] == '':
+    # if request.method == 'POST':
+    names = tuple(request.form.getlist('name'))
+    text = tuple(request.form.getlist('text'))
+    emails = tuple(request.form.getlist('email'))
+    combined = zip(names, text, emails)
+    print(combined)
+    for item in combined:
+        if not item[1] == '':
             try:
-                sql = "update user set reply=%s,review_status='1' where username=%s"
-                cursor.execute(sql, (text[i], names[i]))
-                conn.commit()
-                msg = 'Replies sent successfully'
+                context = mail_templates.mail_agent_reply(item[0])
+                mailing.mail(f"{session['agent']['username'].capitalize()} from Bankare",
+                             item[2], context['subject'], context['html_content'])
+                sql = "update user set reply=%s,review_status='1',assigned_agent=NULL where username=%s"
+                cursor.execute(sql, (item[1], item[0]))
             except:
-                msg = 'Error Sending replies'
-    return render_template('done.html', msg=msg)
+                flash('Something went wrong')
+                return redirect(url_for('dashboard'))
+            connection.commit()
+            flash('Replies sent successfully')
+            return redirect(url_for('dashboard'))
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0", port=5000)

@@ -1,0 +1,108 @@
+{
+  "bank_name": {
+    "iob": {
+      "loan": {
+        "personal_loan": {
+          "loan_id": "string",
+          "amount": "number",
+          "interest_rate": "number",
+          "term": "number",
+          "payment_frequency": "string",
+          "start_date": "string"
+        },
+        "mortgage_loan": {
+          "loan_id": "string",
+          "amount": "number",
+          "interest_rate": "number",
+          "term": "number",
+          "payment_frequency": "string",
+          "start_date": "string",
+          "collateral": {
+            "type": "string",
+            "address": "string",
+            "value": "number"
+          },
+          "business_loan": {
+            "loan_id": "string",
+            "amount": "number",
+            "interest_rate": "number",
+            "term": "number",
+            "payment_frequency": "string",
+            "start_date": "string",
+            "collateral": {
+              "type": "string",
+              "description": "string",
+              "value": "number"
+            },
+            "home_loan": {
+              "loan_id": "string",
+              "amount": "number",
+              "interest_rate": "number",
+              "term": "number",
+              "payment_frequency": "string",
+              "start_date": "string",
+              "collateral": {
+                "type": "string",
+                "address": "string",
+                "value": "number"
+              },
+              "down_payment": "number"
+            }
+          }
+        }
+      },
+      "sbi": {
+        "loan": {
+          "personal_loan": {
+            "loan_id": "string",
+            "amount": "number",
+            "interest_rate": "number",
+            "term": "number",
+            "payment_frequency": "string",
+            "start_date": "string"
+          },
+          "mortgage_loan": {
+            "loan_id": "string",
+            "amount": "number",
+            "interest_rate": "number",
+            "term": "number",
+            "payment_frequency": "string",
+            "start_date": "string",
+            "collateral": {
+              "type": "string",
+              "address": "string",
+              "value": "number"
+            }
+          },
+          "business_loan": {
+            "loan_id": "string",
+            "amount": "number",
+            "interest_rate": "number",
+            "term": "number",
+            "payment_frequency": "string",
+            "start_date": "string",
+            "collateral": {
+              "type": "string",
+              "description": "string",
+              "value": "number"
+            }
+          },
+          "home_loan": {
+            "loan_id": "string",
+            "amount": "number",
+            "interest_rate": "number",
+            "term": "number",
+            "payment_frequency": "string",
+            "start_date": "string",
+            "collateral": {
+              "type": "string",
+              "address": "string",
+              "value": "number"
+            },
+            "down_payment": "number"
+          }
+        }
+      }
+    }
+  }
+}

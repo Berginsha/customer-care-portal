@@ -1,8 +1,7 @@
-{% extends 'base.html' %} {%block title%} Registration page {%endblock%} {%block
-content%}
+{% extends 'base.html' %} {%block title%} Registration page {%endblock%} 
+{%block content%}
 <div class="container">
   <h1 style="margin-top: 100px">Registration page</h1>
-  <h2>{{ msg }}</h2>
   <form
     name="register"
     action="{{url_for('register')}}"

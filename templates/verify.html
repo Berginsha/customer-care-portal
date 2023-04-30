@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{%block title%}
+Verification
+{%endblock%}
+{%block content%}
+<div class="container pd-20">
+    <h1 style="margin-top: 100px">Veriy Your Identity</h1>
+    <form action="{{url_for('verify')}}" method="POST">
+      <div class="form-group">
+        <label class="col-md-5">Enter your OTP:</label
+        ><input class="form-control col-md-10" name="otp" type="password" />
+        <input class="btn btn-success" type="submit" value="submit" />
+      </div>
+    </form>
+  </div>
+{%endblock%}

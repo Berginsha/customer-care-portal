@@ -1,70 +1,130 @@
+<!-- Coding by CodingLab | www.codinglabweb.com -->
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{%block title%} {%endblock%}</title>
-    <!-- Bootstrap -->
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link
       rel="stylesheet"
-      href="{{url_for('static',filename='css/styles.css')}}"
+      href="{{url_for('static',filename='css/style.css')}}"
+    />
+    <link
+    rel="stylesheet"
+    href="https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css"
     />
     <link
       rel="stylesheet"
       href="{{ url_for('static',filename='css/bootstrap.min.css') }}"
     />
-    <script src="{{ url_for('static',filename='js/script.js') }}"></script>
-    <!-- <script>
-        window.watsonAssistantChatOptions = {
-            integrationID: "09da12b3-a730-473b-bef4-8a122b7e4b9e", // The ID of this integration.
-            region: "us-south", // The region your integration is hosted in.
-            serviceInstanceID: "845b2a44-fbd0-462c-aedc-d15aa31eb452", // The ID of your service instance.
-            onLoad: function (instance) { instance.render(); }
-        };
-        setTimeout(function () {
-            const t = document.createElement('script');
-            t.src = "https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
-            document.head.appendChild(t);
-        });
-    </script> -->
-  </head>
+    
+    
+    <title>{%block title%} {%endblock%}</title> 
+</head>
+<body>
+  
+    <nav class="sidebar close">
+        <header>
+            <div class="image-text">
+                <span class="image">
+                    <img src="{{url_for('static',filename='img/bg.png')}}" alt="">
+                </span>
 
-  <body
-    style="background-image: url({{ url_for('static', filename='img/bg.jpg') }})"
-  >
-    <nav class="navbar navbar-primary">
-      <div class="container-fluid">
-        <!-- Brand and toggle get grouped for better mobile display -->
-        <div class="navbar-header">
-          <button
-            type="button"
-            class="navbar-toggle collapsed"
-            data-toggle="collapse"
-            data-target="#bs-example-navbar-collapse-1"
-            aria-expanded="false"
-          >
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">Customer Care Registry</a>
+                <div class="text logo-text">
+                    <span class="name">Customer Care Portal</span>
+                    <span class="profession">for Banking</span>
+                </div>
+            </div>
+
+            <i class='bx bx-chevron-right toggle'></i>
+        </header>
+
+        <div class="menu-bar">
+            <div class="menu">
+
+                <li class="search-box">
+                    <i class='bx bx-search icon'></i>
+                    <input type="text" placeholder="Search...">
+                </li>
+
+                <ul class="menu-links">
+                    <li class="nav-link">
+                        <a href="{{url_for('home')}}">
+                            <i class='bx bx-home-alt icon' ></i>
+                            <span class="text nav-text">Home</span>
+                        </a>
+                    </li>
+                    {% if not session['logged_in'] %}
+                    <li class="nav-link">
+                        <a href="{{url_for('register')}}">
+                            <i class='bx bx-edit-alt icon' ></i>
+                            <span class="text nav-text">Register</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-link">
+                        <a href="{{url_for('login')}}">
+                            <i class='bx bxs-user-account icon'></i>
+                            <span class="text nav-text">Login</span>
+                        </a>
+                    </li>
+                    {% elif session['logged_in'] and session['role'] == 'user' %}
+                    <li class="nav-link">
+                        <a href="{{url_for('dashboard')}}">
+                            <i class='bx bxs-user-rectangle icon' ></i>
+                            <span class="text nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <a href="{{url_for('complaint')}}">
+                            <i class='bx bx-angry icon' ></i>
+                            <span class="text nav-text">Complaints</span>
+                        </a>
+                    </li>
+                    
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="bottom-content">
+                <li class="">
+                    <a href="{{url_for('logout')}}">
+                        <i class='bx bx-log-out icon' ></i>
+                        <span class="text nav-text">Logout</span>
+                    </a>
+                </li>
+
+                <li class="mode">
+                    <div class="sun-moon">
+                        <i class='bx bx-moon icon moon'></i>
+                        <i class='bx bx-sun icon sun'></i>
+                    </div>
+                    <span class="mode-text text">Dark mode</span>
+
+                    <div class="toggle-switch">
+                        <span class="switch"></span>
+                    </div>
+                </li>
+                
+            </div>
         </div>
 
-        <ul class="nav navbar-nav navbar-right">
-          <li><a href="{{url_for('login')}}">Login</a></li>
-          <li><a href="{{url_for('register')}}">Register</a></li>
-        </ul>
-      </div>
     </nav>
-
-    {%block content%} {% if messages %}
-    <ul class="flashes">
-      {% for message in messages %}
-      <li>{{ message }}</li>
-      {% endfor %}
-    </ul>
-    {% endif %} {%endblock%}
-  </body>
+    
+    <section class="home">
+        <div>
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+            <center><h2>{{ message }}</h2></center>
+            {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {%block content%}
+      {%endblock%}
+    </div>
+    </section>
+    <script src="{{ url_for('static',filename='js/script.js') }}"></script>
+    
+</body>
 </html>
