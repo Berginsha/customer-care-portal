@@ -3,6 +3,8 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from app import mailing, random_generator, mail_templates
 import json
+import sys
+from waitress import serve
 
 
 app = Flask(__name__)
@@ -64,6 +66,7 @@ def register():
                              context['subject'], context['html_content'])
             except:
                 flash('Error sending OTP')
+                return redirect(url_for('register'))
             print(session['email'], context['subject'],
                   context['html_content'])
             return redirect(url_for('verify'))
@@ -163,18 +166,21 @@ def complaint():
     if request.method == "POST":
         topic = request.form['topic']
         description = request.form['desc']
+        email=session['customer']['email']
+        print(session['customer'])
         values = (session['customer']['username'],
-                  session['customer']['bank'], topic, description)
+                  session['customer']['bank'],session['customer']['email'], topic, description)
         print(values)
         try:
             cursor.execute(
                 "insert into complaints values(%s,%s,%s,%s)", values)
             mailing.mail(
-                f"{session['name'].capitalize()} from BANKARE", subject=topic, template=description)
+                f"{session['name'].capitalize()} from BANKARE",email, subject=topic, template=description)
+            connection.commit()
+            flash('Complaint posted successfully')
         except:
             flash('error submitting complaint!!! Retry ')
-        flash('Complaint posted successfully')
-        connection.commit()
+            return redirect(url_for('complaint'))
         return redirect(url_for('home'))
     else:
         return render_template('complaint.html')
@@ -190,16 +196,15 @@ def success():
         print(ticket, query, session['customer']['username'])
         print(session['customer']['username'])
         sql = "UPDATE user SET QUERY=%s,TICKET=%s,REVIEW_STATUS='0',bank=%s,query_category=%s,assigned_agent=NULL,reply=NULL where USERNAME=%s"
-        status = cursor.execute(
-            sql, (query, session['ticket'], bank, feature, session['customer']['username']))
-        connection.commit()
-        if status:
-            flash(
-                f'Success ! Your Ticket id is {ticket}')
-            return redirect(url_for('dashboard'))
-        else:
+        try:
+            cursor.execute(
+                sql, (query, session['ticket'], bank, feature, session['customer']['username']))
+            connection.commit()
+            flash(f'Success ! Your Ticket id is {ticket}')
+        except:
             flash('Error Submitting your Query')
             return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard'))
 
 
 @app.route('/logout')
@@ -208,55 +213,67 @@ def logout():
     return redirect(url_for('home'))
 
 
-@app.route('/querying', methods=['POST'])
-def admin_query():
-    agents = tuple(request.form.getlist('agent_name'))
-    usernames = tuple(request.form.getlist('cus_name'))
-    emails = tuple(request.form.getlist('email'))
-    combined = zip(agents, usernames, emails)
-    print(combined)
-    for item in combined:
-        if item[0] != 'none':
-            try:
-                print(item[0], item[1], item[2])
-                context = mail_templates.mail_agent_assigned(item[1], item[0])
-                mailing.mail(f"{session['role'].capitalize()} from BANKARE",
-                             item[2], context['subject'], context['html_content'])
-                sql = "update user set assigned_agent=%s where username=%s"
-                cursor.execute(
-                    sql, (item[0], item[1]))
-            except:
-                flash('Error saving allotments/sending emails')
+@app.route('/querying', methods=['POST', 'GET'])
+def admin_assign_customer():
+    if request.method == "POST":
+        agents = tuple(request.form.getlist('agent_name'))
+        usernames = tuple(request.form.getlist('cus_name'))
+        emails = tuple(request.form.getlist('email'))
+        combined = zip(agents, usernames, emails)
+        print(combined)
+        for item in combined:
+            if item[0] != 'none':
+                try:
+                    print(item[0], item[1], item[2])
+                    context = mail_templates.mail_agent_assigned(
+                        item[1], item[0])
+                    mailing.mail(f"{session['role'].capitalize()} from BANKARE",
+                                 item[2], context['subject'], context['html_content'])
+                    sql = "update user set assigned_agent=%s where username=%s"
+                    cursor.execute(
+                        sql, (item[0], item[1]))
+                except:
+                    flash('Error saving allotments/sending emails')
+                    return redirect(url_for('dashboard'))
+                connection.commit()
+                flash('Allotments updated Successfully')
                 return redirect(url_for('dashboard'))
-            connection.commit()
-            flash('Allotments updated Successfully')
-            return redirect(url_for('dashboard'))
-    # return render_template('done.html', msg=msg)
+    else:
+        flash('Unauthorized !!')
+        return redirect(url_for('home'))
 
 
 @app.route('/executing', methods=['POST', 'GET'])
 def agent_submit_reply():
-    # if request.method == 'POST':
-    names = tuple(request.form.getlist('name'))
-    text = tuple(request.form.getlist('text'))
-    emails = tuple(request.form.getlist('email'))
-    combined = zip(names, text, emails)
-    print(combined)
-    for item in combined:
-        if not item[1] == '':
-            try:
-                context = mail_templates.mail_agent_reply(item[0])
-                mailing.mail(f"{session['agent']['username'].capitalize()} from Bankare",
-                             item[2], context['subject'], context['html_content'])
-                sql = "update user set reply=%s,review_status='1',assigned_agent=NULL where username=%s"
-                cursor.execute(sql, (item[1], item[0]))
-            except:
-                flash('Something went wrong')
+    if request.method == 'POST':
+        names = tuple(request.form.getlist('name'))
+        text = tuple(request.form.getlist('text'))
+        emails = tuple(request.form.getlist('email'))
+        combined = zip(names, text, emails)
+        print(combined)
+        for item in combined:
+            if not item[1] == '':
+                try:
+                    context = mail_templates.mail_agent_reply(item[0])
+                    mailing.mail(f"{session['agent']['username'].capitalize()} from Bankare",
+                                 item[2], context['subject'], context['html_content'])
+                    sql = "update user set reply=%s,review_status='1',assigned_agent=NULL where username=%s"
+                    cursor.execute(sql, (item[1], item[0]))
+                except:
+                    flash('Something went wrong')
+                    return redirect(url_for('dashboard'))
+                connection.commit()
+                flash('Replies sent successfully')
                 return redirect(url_for('dashboard'))
-            connection.commit()
-            flash('Replies sent successfully')
-            return redirect(url_for('dashboard'))
+    else:
+        flash('Unauthorized !')
+        return redirect(url_for('home'))
 
 
+mode = str(sys.argv[1])
+print(mode)
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    if mode == 'dev':
+        app.run(debug=True, host="0.0.0.0", port=5000)
+    elif mode == 'dep':
+        serve(app, host='0.0.0.0', port=5000)
