@@ -195,7 +195,7 @@ body.dark .sidebar header .toggle{
     width: 100%;
     border-radius: 6px;
     text-decoration: none;
-    /* transition: var(--tran-03); */
+    transition: var(--tran-03);
 }
 
 .sidebar li a:hover{
@@ -209,9 +209,7 @@ body.dark .sidebar li a:hover .icon,
 body.dark .sidebar li a:hover .text{
     color: var(--text-color);
 }
-.menu-links{
-    margin-left: -30px;
-}
+
 .sidebar .menu-bar{
     height: calc(100% - 55px);
     display: flex;
@@ -227,6 +225,9 @@ body.dark .sidebar li a:hover .text{
     background-color: var(--primary-color-light);
     position: relative;
     transition: var(--tran-05);
+}
+.menu-links{
+    margin-left: -30px;
 }
 
 .menu-bar .mode .sun-moon{

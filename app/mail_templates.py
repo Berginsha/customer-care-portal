@@ -1,6 +1,6 @@
-def mail_otp(user,otp):
-  subject=f"Greetings {user} !!!"
-  template = f'''<!DOCTYPE html> 
+def mail_otp(user, otp):
+    subject = f"Greetings {user} !!!"
+    template = f'''<!DOCTYPE html> 
 <html>
   <head>
     <meta charset="UTF-8">
@@ -13,11 +13,12 @@ def mail_otp(user,otp):
     <p>Thanks,<br>The Bankare Team</p>
   </body>
 </html>'''
-  return {'subject':subject,'html_content':template}
+    return {'subject': subject, 'html_content': template}
 
-def mail_agent_assigned(user,agent):
-  subject=f"Greetings {user} !"
-  template=f'''<html>
+
+def mail_agent_assigned(user, agent):
+    subject = f"Greetings {user} !"
+    template = f'''<html>
   <body>
     <p>Hello there!</p>
     <p>Thank you for contacting us. </p>
@@ -28,11 +29,12 @@ def mail_agent_assigned(user,agent):
     <p>The Bankare Team</p>
   </body>
 </html>'''
-  return {'subject':subject,'html_content':template}
+    return {'subject': subject, 'html_content': template}
+
 
 def mail_agent_reply(user):
-  subject=f"Greetings {user} !"
-  template=f'''<!DOCTYPE html>
+    subject = f"Greetings {user} !"
+    template = f'''<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -47,4 +49,28 @@ def mail_agent_reply(user):
   </body>
 </html>
 '''
-  return {'subject':subject,'html_content':template}
+    return {'subject': subject, 'html_content': template}
+
+
+def mail_complaint(user, bank_name):
+    subject = f"Greetings {user}!"
+    template = f'''<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Apology to Customer</title>
+  </head>
+  <body>
+    <h1>Apology to Customer</h1>
+    <p>Dear {user},</p>
+    <p>We apologize for any inconvenience caused by the issue you experienced. We take customer complaints very seriously and would like to express our sincerest apologies for falling short of your expectations.</p>
+    <p>Your Banking provider is actively working on resolving the issue. In the meantime, please do not hesitate to contact us with any further questions or concerns.</p>
+    <p>Thank you for bringing this to our attention and giving us the opportunity to make things right. We value your business and hope to regain your trust and confidence.</p>
+    <p>Sincerely,</p>
+    <p>{bank_name}@Bankare<br>
+    Regards,<br>
+    The Bankare Team</p>
+  </body>
+</html>
+'''
+    return {'subject': subject, 'html_content': template}

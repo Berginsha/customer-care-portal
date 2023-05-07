@@ -31,7 +31,7 @@ def health():
 def getJson():
     with open('data.json') as f:
         file = json.load(f)
-        return file['bank_name']
+        return file['bank']
 
 
 @app.route('/')
@@ -62,8 +62,8 @@ def register():
             try:
                 context = mail_templates.mail_otp(
                     session['name'], session['otp'])
-                mailing.mail("Register @ BANKARE", session['email'],
-                             context['subject'], context['html_content'])
+                mailing.send_mail("Register @ BANKARE", session['email'],
+                                  context['subject'], context['html_content'])
             except:
                 flash('Error sending OTP')
                 return redirect(url_for('register'))
@@ -92,13 +92,37 @@ def verify():
         return render_template('verify.html')
 
 
+def agent_session_refresh():
+    cursor.execute(
+        "select * from user where user.assigned_agent=%s and user.review_status=0", (session['agent']['username'],))
+
+    session['customer'] = cursor.fetchall()
+    print(session['customer'])
+
+
+def user_session_refresh():
+    sql = "select user.*,bank.bank_email from user inner join bank on user.bank=bank.bank_name where user.username=%s"
+    cursor.execute(sql, (session['customer']['username'],))
+    session['customer'] = cursor.fetchone()
+    print(session['customer'])
+
+
+def admin_refresh_session():
+    cursor.execute(
+        "select * from user where assigned_agent=NULL or review_status=0")
+    session['customer'] = cursor.fetchall()
+    cursor.execute("select * from agent")
+    session['agent'] = cursor.fetchall()
+    print(session['customer'], session['agent'])
+
+
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == "POST":
         name = request.form['name']
         password = request.form['password']
         values = (name, password)
-        sql = "select user.*,bank.bank_email from user inner join bank on bank=user.bank where username=%s and password=%s"
+        sql = "select user.*,bank.bank_email from user inner join bank on user.bank=bank.bank_name where user.username=%s and user.password=%s"
         cursor.execute(sql, values)
         rs = cursor.fetchone()
         if rs:
@@ -112,19 +136,13 @@ def login():
         rs = cursor.fetchone()
         if rs:
             session['logged_in'] = True
-            cursor.execute('select * from user')
-            customers = cursor.fetchall()
-            cursor.execute('select * from agent')
-            agents = cursor.fetchall()
-            print(customers, agents)
-            session['role'] = 'agent'
-            session['name'] = rs['username']
-            session['customer'] = customers
             session['agent'] = rs
+            session['role'] = 'agent'
             session['bank'] = getJson()
+            agent_session_refresh()
             print(
                 f'''session role:{session['role']}\n
-                agent name:{session['name']}\n
+                agent name:{session['agent']['username']}\n
                 all customers:{session['customer']}\n
                 all_agents:{session['agent']}\n
                 bank detains:{session['bank']}''')
@@ -133,15 +151,10 @@ def login():
         cursor.execute(sql, values)
         rs = cursor.fetchone()
         if rs:
-            session['logged_in'] = True
-            cursor.execute("select * from user")
-            customers = cursor.fetchall()
-            cursor.execute("select * from agent")
-            agents = cursor.fetchall()
-            print(customers, agents)
             session['role'] = 'admin'
-            session['customer'] = customers
-            session['agent'] = agents
+            session['logged_in'] = True
+            admin_refresh_session()
+
             print(f'''role:{session['role']}\n
             all customers:{session['customer']}\n
             all agents: {session['agent']}''')
@@ -155,39 +168,48 @@ def login():
 
 @app.route('/dashboard', methods=['POST', 'GET'])
 def dashboard():
-    if not session.get('logged_in'):
+    if session['logged_in'] and session['role'] == 'agent':
+        agent_session_refresh()
+    elif session['logged_in'] and session['role'] == 'user':
+        user_session_refresh()
+    elif session['logged_in'] and session['role'] == 'admin':
+        admin_refresh_session()
+    else:
         flash('Please log in first')
         return redirect(url_for('login'))
     return render_template('dashboard.html')
 
 
+
+
 @app.route('/user/complaints', methods=["POST", "GET"])
 def complaint():
     if request.method == "POST":
-        topic = request.form['topic']
+        topic = str(request.form['topic'])
         description = request.form['desc']
-        email=session['customer']['email']
-        print(session['customer'])
+        email = session['customer']['bank_email']
         values = (session['customer']['username'],
-                  session['customer']['bank'],session['customer']['email'], topic, description)
-        print(values)
+                  session['customer']['bank'], topic, description)
         try:
+            context = mail_templates.mail_complaint(
+                session['customer']['username'], session['customer']['bank'])
+            print(context)
+            mailing.send_mail(
+                f"{session['customer']['username'].capitalize()} from BANKARE", email, topic, context['html_content'])
             cursor.execute(
                 "insert into complaints values(%s,%s,%s,%s)", values)
-            mailing.mail(
-                f"{session['name'].capitalize()} from BANKARE",email, subject=topic, template=description)
-            connection.commit()
-            flash('Complaint posted successfully')
         except:
             flash('error submitting complaint!!! Retry ')
             return redirect(url_for('complaint'))
+        connection.commit()
+        flash('Complaint posted successfully')
         return redirect(url_for('home'))
     else:
         return render_template('complaint.html')
 
 
-@app.route('/success', methods=['POST', 'GET'])
-def success():
+@app.route('/query',methods=["POST","GET"])
+def query():
     if request.method == "POST":
         ticket = session['ticket'] = random_generator.alphanumeric()
         query = request.form['query']
@@ -205,6 +227,8 @@ def success():
             flash('Error Submitting your Query')
             return redirect(url_for('dashboard'))
         return redirect(url_for('dashboard'))
+    else:
+        return render_template('query.html')
 
 
 @app.route('/logout')
@@ -217,18 +241,19 @@ def logout():
 def admin_assign_customer():
     if request.method == "POST":
         agents = tuple(request.form.getlist('agent_name'))
-        usernames = tuple(request.form.getlist('cus_name'))
+        usernames = tuple(request.form.getlist('customer_name'))
         emails = tuple(request.form.getlist('email'))
+        print(agents, usernames, emails)
         combined = zip(agents, usernames, emails)
         print(combined)
         for item in combined:
-            if item[0] != 'none':
+            if not item[0] == 'none':
                 try:
                     print(item[0], item[1], item[2])
                     context = mail_templates.mail_agent_assigned(
                         item[1], item[0])
-                    mailing.mail(f"{session['role'].capitalize()} from BANKARE",
-                                 item[2], context['subject'], context['html_content'])
+                    mailing.send_mail(f"{session['role'].capitalize()} from BANKARE",
+                                      item[2], context['subject'], context['html_content'])
                     sql = "update user set assigned_agent=%s where username=%s"
                     cursor.execute(
                         sql, (item[0], item[1]))
@@ -238,9 +263,30 @@ def admin_assign_customer():
                 connection.commit()
                 flash('Allotments updated Successfully')
                 return redirect(url_for('dashboard'))
+            else:
+                flash('No changes made')
+                return redirect(url_for('dashboard'))
     else:
         flash('Unauthorized !!')
         return redirect(url_for('home'))
+
+
+@app.route('/addAgent', methods=['POST', 'GET'])
+def add_agent():
+    if request.method == 'POST':
+        agent_name = request.form['agent_name']
+        agent_password = request.form['agent_password']
+        try:
+            cursor.execute('Insert into agent values(%s,%s)',
+                           (agent_name, agent_password))
+        except:
+            flash('Error adding agent')
+            return redirect(url_for('add_agent'))
+        connection.commit()
+        flash('Successfully added Agent')
+        return redirect(url_for('add_agent'))
+    else:
+        return render_template('addAgent.html')
 
 
 @app.route('/executing', methods=['POST', 'GET'])
@@ -250,14 +296,14 @@ def agent_submit_reply():
         text = tuple(request.form.getlist('text'))
         emails = tuple(request.form.getlist('email'))
         combined = zip(names, text, emails)
-        print(combined)
+        print(names,text,emails)
         for item in combined:
-            if not item[1] == '':
+            if not item[1] == None:
                 try:
                     context = mail_templates.mail_agent_reply(item[0])
-                    mailing.mail(f"{session['agent']['username'].capitalize()} from Bankare",
-                                 item[2], context['subject'], context['html_content'])
-                    sql = "update user set reply=%s,review_status='1',assigned_agent=NULL where username=%s"
+                    mailing.send_mail(f"{session['agent']['username'].capitalize()} from Bankare",
+                                      item[2], context['subject'], context['html_content'])
+                    sql = "update user set reply=%s,review_status='1' where username=%s"
                     cursor.execute(sql, (item[1], item[0]))
                 except:
                     flash('Something went wrong')
@@ -271,9 +317,11 @@ def agent_submit_reply():
 
 
 mode = str(sys.argv[1])
-print(mode)
+
 if __name__ == '__main__':
     if mode == 'dev':
         app.run(debug=True, host="0.0.0.0", port=5000)
     elif mode == 'dep':
         serve(app, host='0.0.0.0', port=5000)
+    else:
+        print(f"Invalid mode '{mode}'")

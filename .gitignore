@@ -3,3 +3,5 @@ mysql_schema.sql
 .dockerignore
 app/__pycache__/*
 __pycache__/*
+flask.env
+mysql.env

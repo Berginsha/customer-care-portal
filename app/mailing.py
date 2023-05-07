@@ -6,14 +6,16 @@ from sendgrid.helpers.mail import Mail,From
 import os
 
 
-def mail(sender_name,recipient_email,subject,template):
+def send_mail(sender_name,recipient_email,subject,template):
+    print('Mailing target reached')
     mail=From(name=sender_name,email=os.getenv('sendgrid_sender_email'))
     message = Mail(
     from_email=mail,
     to_emails=recipient_email,
     subject=subject,
-    html_content=f'''<div>{template}<div>'''
+    html_content=template
     )
+    print(message)
     try:
         sg = SendGridAPIClient(os.getenv('sendgrid_api_key'))
         response=sg.send(message)

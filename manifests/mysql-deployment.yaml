@@ -25,7 +25,7 @@ spec:
       containers:
         - name: mysql-app
           image: mysql:8.0.32-debian
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3306
           env:

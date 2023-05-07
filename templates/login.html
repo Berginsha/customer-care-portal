@@ -4,18 +4,34 @@ content%}
   <h1 style="margin-top: 100px">Login page</h1>
   <form action="{{url_for('login')}}" method="POST">
     <div class="form-group">
-      <label class="form-label">User Name</label
-      ><input class="form-control" name="name" type="text" />
-      <label class="form-label">Password:</label
-      ><input class="form-control" name="password" type="password" /><div id="passwordHelpBlock" class="form-text">
-        Your password must be 8-20 characters long, contain letters and numbers, and must not contain spaces, special characters, or emoji.
+      <div class="form-group col-sm-5">
+        <label class="sr-only" for="inlineFormInputGroup">Username</label>
+        <div class="input-group mb-2">
+          <div class="input-group-prepend">
+            <div class="input-group-text">@</div>
+          </div>
+          <input type="text" class="form-control" name="name" placeholder="Username" required/>
+        </div>
       </div>
-      
-    <div><div><input class="btn btn-success mr-10" type="submit" value="submit" />
-      <input class="btn btn-danger" type="reset" value="clear" /></div>
-      
-    </div><br>
-      <a href="{{url_for('home')}}" class="btn btn-primary pd-10">< Back to Home</a>
+      <label class="form-label">Password:</label>
+      <div class="col-sm-5">
+        <input class="form-control" name="password" type="password" placeholder="Password"/>
+      </div>
+      <div id="passwordHelpBlock" class="col-sm-5 form-text">
+        Your password must be 8-20 characters long, contain letters and numbers,
+        and must not contain spaces, special characters, or emoji.
+      </div>
+      <br />
+      <div>
+        <div>
+          <input class="btn btn-success mr-10" type="submit" value="submit" />
+          <input class="btn btn-danger" type="reset" value="clear" />
+        </div>
+      </div>
+      <br />
+      <a href="{{url_for('home')}}" class="btn btn-primary pd-10"
+        >< Back to Home</a
+      >
     </div>
   </form>
 </div>

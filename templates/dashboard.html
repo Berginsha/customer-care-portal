@@ -1,226 +1,329 @@
 {%extends 'base.html'%} {%block title%} Dashboard {%endblock%} {%block content%}
 <center>
-  <div class="container container-pd-5">
+  <div class="container container-pd-5 mt-5">
     <h1>Welcome to Dashboard</h1>
     <div>You have successfully logged in as {{ session['role'] }}</div>
   </div>
 </center>
 {% if session['role'] =='user' %}
 <center>
-  <div class="container">
-    {% set customer = session['customer'] %}
-    <h1 class="heading">Hello {{ customer['username'] }}</h1>
-    {% if customer['query'] == None %}
-    <h1>You Haven't made any Queries</h1>
-    {% else %}
-    <div class="container">
-      <table>
-        <tr>
-          <td><h3>Your Query</h3></td>
-          <td><h3>:</h3></td>
-          <td><h3>&nbsp;&nbsp;&nbsp;{{ customer['query'] }}</h3></td>
-        </tr>
-        <tr>
-          <td><h3>Your Ticket</h3></td>
-          <td><h3>:</h3></td>
-          <td><h3>&nbsp;&nbsp;&nbsp;{{ customer['ticket'] }}</h3></td>
-        </tr>
-        {% if customer['assigned_agent'] %}
-        <tr>
-          <td><h3>Assigned to</h3></td>
-          <td><h3>:</h3></td>
-          <td>
-            <h3>
-              &nbsp;&nbsp;&nbsp;{{ customer['assigned_agent'].capitalize() }}
-            </h3>
-          </td>
-        </tr>
-        {% if customer['review_status'] == 1 %}
-        <tr>
-          <td><h3>Reply from the Agent</h3></td>
-          <td><h3>:</h3></td>
-          <td><h3>&nbsp;&nbsp;&nbsp;{{ customer['reply'] }}</h3></td>
-        </tr>
-        {% else %}
-        <tr>
-          <td><h3>Review Status</h3></td>
-          <td><h3>:</h3></td>
-          <td><h3>&nbsp;&nbsp;&nbsp;Not Yet Reviewed</h3></td>
-        </tr>
-        {% endif %} {% else %}
-        <td><h3 style="color: red">Never Assigned to any agent</h3></td>
-        {% endif %}
-      </table>
-    </div>
-    <hr />
-    {% endif %}
-    <div>
-      <div id="add_elem">
-        <button id="form" class="btn btn-success" onclick="form_create()">
-          Create Query
-        </button>
-        <a class="btn btn-primary" href="{{ url_for('logout') }}"
-          >Back to Home</a
-        >
-      </div>
+  {% set customer = session['customer'] %}
+  <h1 class="heading">Hello {{ customer['username'] }}</h1>
+  {% if customer['query'] == None %}
+  <h1>You Haven't made any Queries</h1>
+  {% else %}
+  <div class="container mt-5">
+    <table class="table-borderless">
+      <tr>
+        <td><h3>Your Query</h3></td>
+        <td><h3>:</h3></td>
+        <td><h3>&nbsp;&nbsp;&nbsp;{{ customer['query'] }}</h3></td>
+      </tr>
+      <tr>
+        <td><h3>Your Ticket</h3></td>
+        <td><h3>:</h3></td>
+        <td><h3>&nbsp;&nbsp;&nbsp;{{ customer['ticket'] }}</h3></td>
+      </tr>
+      {% if customer['assigned_agent'] %}
+      <tr>
+        <td><h3>Assigned to</h3></td>
+        <td><h3>:</h3></td>
+        <td>
+          <h3>
+            &nbsp;&nbsp;&nbsp;{{ customer['assigned_agent'].capitalize() }}
+          </h3>
+        </td>
+      </tr>
+      {% if customer['review_status'] == 1 %}
+      <tr>
+        <td><h3>Reply from the Agent</h3></td>
+        <td><h3>:</h3></td>
+        <td><h3>&nbsp;&nbsp;&nbsp;{{ customer['reply'] }}</h3></td>
+      </tr>
+      {% else %}
+      <tr>
+        <td><h3>Review Status</h3></td>
+        <td><h3>:</h3></td>
+        <td><h3>&nbsp;&nbsp;&nbsp;Not Yet Reviewed</h3></td>
+      </tr>
+      {% endif %} {% else %}
+      <tr>
+        <td colspan="3">
+          <h3 style="color: red">Never Assigned to an agent</h3>
+        </td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+  <hr />
+  {% endif %}
+  <div>
+    <div id="add_elem">
+      <a class="btn btn-primary" href="{{ url_for('logout') }}">Back to Home</a>
     </div>
   </div>
 </center>
 
 {% elif session['role'] == 'agent' %}
 <hr />
-<center>
-  <div class="container">
-    <form action="{{ url_for('agent_submit_reply') }}" method="POST">
-      <table class="table table-hover">
-        <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Ticket No</th>
-          <th scope="col">Query</th>
-          <th scope="col">Reference</th>
-          <th scope="col">Reply</th>
-        </tr>
-        {% for customer in session['customer'] %} {% if
-        customer['assigned_agent'] == session['name'] and
-        customer['review_status'] == 0 %}
-        <tr>
-          <td>
-            <select name="name">
-              <option value="{{ customer['username'] }}">
-                {{ customer['username'] }}
-              </option>
-            </select>
-            <input type="hidden" name="email" value="{{customer['email']}}" />
-          </td>
-          <td>{{ customer['ticket'] }}</td>
-          <td>
-            <span
-              onclick="togglePopup()"
-              id="hideDisplaySpan"
-              class="btm btn-primary"
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button
+      class="nav-link active"
+      id="home-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#home-tab-pane"
+      type="button"
+      role="tab"
+      aria-controls="home-tab-pane"
+      aria-selected="true"
+    >
+      Customer Queries
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button
+      class="nav-link"
+      id="profile-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#profile-tab-pane"
+      type="button"
+      role="tab"
+      aria-controls="profile-tab-pane"
+      aria-selected="false"
+    >
+      Bank Reference
+    </button>
+  </li>
+</ul>
+<div class="tab-content" id="myTabContent">
+  <div
+    class="tab-pane fade show active mt-5"
+    id="home-tab-pane"
+    role="tabpanel"
+    aria-labelledby="home-tab"
+    tabindex="0"
+  >
+    <center>
+      {% if session['customer'] %}
+      <form action="{{ url_for('agent_submit_reply') }}" method="POST">
+        <table class="table table-hover">
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Ticket No</th>
+            <th scope="col">Bank</th>
+            <th scope="col">Category</th>
+            <th scope="col">Query</th>
+            <th scope="col">Reply</th>
+          </tr>
+
+          {% for customer in session['customer'] %}
+          <tr>
+            <td>
+              {{customer['username'].capitalize()}}
+              <input type="hidden" name="name" value="{{customer['username']}}" />
+              <input type="hidden" name="email" value="{{customer['email']}}" />
+            </td>
+            <td>{{ customer['ticket'] }}</td>
+            <td>{{ customer['bank'].upper() }}</td>
+            <td>{{ customer['query_category'] }}</td>
+            <td>{{ customer['query'].capitalize() }}</td>
+            <td> <div class="">
+              <textarea class="form-control" name="text" rows="3"></textarea>
+            </div></td>
+          </tr>
+          {% endfor %}
+          <tr>
+            <td colspan="7">
+              <center>
+                <input class="btn btn-primary" type="submit" value="submit" />
+              </center>
+            </td>
+          </tr>
+        </table>
+      </form>
+      {% else %}
+      <h2>No customers assigned Yet</h2>
+      {% endif %}
+    </center>
+  </div>
+  <div
+    class="tab-pane fade mt-5"
+    id="profile-tab-pane"
+    role="tabpanel"
+    aria-labelledby="profile-tab"
+    tabindex="0"
+  >
+    {% set banks=session['bank'].keys()|list %} {% for bank in banks %}
+    <p>
+      <button
+        class="btn btn-primary"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#{{bank}}"
+        aria-expanded="false"
+        aria-controls="collapseExample"
+      >
+        {{bank}}
+      </button>
+    </p>
+    {% set features=session['bank'][bank].keys()|list%}
+    <div class="collapse" id="{{bank}}">
+      <div class="card card-body">
+        <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+          {% for feature in features %}
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              id="{{bank}}-{{feature}}-{{feature}}"
+              data-bs-toggle="pill"
+              data-bs-target="#{{bank}}-{{feature}}"
+              type="button"
+              role="tab"
+              aria-controls="{{bank}}-{{feature}}"
+              aria-selected="true"
             >
-              Show response chart
-            </span>
-          </td>
-          <td>{{ customer['query'] }}</td>
-          <td><textarea name="text" cols="50" rows="4"></textarea></td>
-        </tr>
-        {% set
-        loan=session['bank'][customer['bank']][customer['query_category']] %} {%
-        set
-        loan_types=session['bank'][customer['bank']][customer['query_category']].keys()|list
-        %} {% set
-        loan_fields=session['bank'][customer['bank']][customer['query_category']]['personal_loan'].keys()|list
-        %}
-        <div id="togglePopup" class="d-none">
+              {{feature}}
+            </button>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="tab-content">
+          {% for feature in features %}
+          <div
+            class="tab-pane fade"
+            id="{{bank}}-{{feature}}"
+            role="tabpanel"
+            aria-labelledby="{{bank}}-{{feature}}-{{feature}}"
+            tabindex="0"
+          >
+            <table class="table table-borderless">
+              {% if feature == 'loan' %}
+              <tr>
+                <th>Loan Type</th>
+                <th>amount</th>
+                <th>Interest-Rate</th>
+                <th>Loan ID</th>
+                <th>Payment Frequency</th>
+                <th>Start Date</th>
+                <th>Term</th>
+              </tr>
+              {% elif feature =='card' %}
+              <tr>
+                <th>Card Type</th>
+                <th>Annual Fee</th>
+                <th>CashBack</th>
+                <th>Description</th>
+                <th>Points</th>
+                <th>Rewards</th>
+              </tr>
+              {% endif %} {% set feature_types =
+              session['bank'][bank][feature].keys()|list %} {% for type in
+              feature_types %} {% set values=
+              session['bank'][bank][feature][type].values()|list %}
+              <tr>
+                <td>{{type}}</td>
+                {% for value in values %}
+                <td>{{ value }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <br />
+    {% endfor %} {% elif session['role']=='admin' %}
+
+    <center>
+      <div class="container mt-5">
+        {% if session['customer'] %}
+        <form action="{{ url_for('admin_assign_customer') }}" method="POST">
+          <h1>All Customers</h1>
+
           <table class="table table-hover">
             <tr>
-              <th scope="col">Loan Type</th>
-              {% for item in loan_fields %}
-              <th scope="col">{{item}}</th>
-              {% endfor %}
+              <th scope="col">Name</th>
+              <th scope="col">Ticket No</th>
+              <th scope="col">Email</th>
+              <th scope="col">Query</th>
+              <th scope="col">Query Status</th>
+              <th scope="col">Assigned to</th>
+              <th scope="col">Assign To</th>
             </tr>
+
+            {% for customer in session['customer'] %} {% if
+            customer['review_status'] == 0 and not customer['query'] == None %}
             <tr>
-              {% for loanType in loan_types %}
-              <th scope="col">{{ loanType }}</th>
-              {% for loanField in loan_fields %}
-              <td scope="col">{{ loan[loanType][loanField] }}</td>
-              {% endfor %}
-            </tr>
-            {% endfor %}
-          </table>
-        </div>
-        {% endif %} {% endfor %}
-        <tr>
-          <td colspan="4">
-            <center>
-              <input class="btn btn-primary" type="submit" value="submit" />
-            </center>
-          </td>
-        </tr>
-      </table>
-    </form>
-  </div>
-</center>
-{% elif session['role']=='admin' %} {% if session['customer'] %}
-<center>
-  <div class="container">
-    <form action="{{ url_for('admin_assign_customer') }}" method="POST">
-      <h1>All Customers</h1>
-      <table class="table table-hover">
-        <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Ticket No</th>
-          <th scope="col">Email</th>
-          <th scope="col">Query</th>
-          <th scope="col">Query Status</th>
-          <th scope="col">Assigned to</th>
-          <th scope="col">Assign To</th>
-        </tr>
-
-        {% for customer in session['customer'] %} {% if
-        customer['review_status'] == 0 and not customer['query'] == None %}
-        <tr>
-          <td>
-            <select name="cus_name">
-              <option value="{{ customer['username'] }}">
+              <td>
                 {{ customer['username'] }}
-              </option>
-            </select>
-          </td>
-          <td>{{ customer['ticket'] }}</td>
-          <td>
-            <select name="email">
-              <option value="{{ customer['email'] }}">
+                <input
+                  type="hidden"
+                  name="customer_name"
+                  value="{{ customer['username'] }}"
+                />
+              </td>
+              <td>{{ customer['ticket'] }}</td>
+              <td>
                 {{ customer['email'] }}
-              </option>
-            </select>
-          </td>
+                <input
+                  type="hidden"
+                  name="email"
+                  value="{{ customer['email'] }}"
+                />
+              </td>
+              <td>{{ customer['query'] }}</td>
+              <td>
+                {% if customer['review_status'] == 1 %} Reviewed {% else %} Not
+                yet Reviewed {% endif %}
+              </td>
+              <td>{{ customer['assigned_agent'] }}</td>
+              <td>
+                <select name="agent_name">
+                  <option value="none">Select agent</option>
+                  {% for agent in session['agent'] %}
+                  <option value="{{ agent['username'] }}">
+                    {{ agent['username'] }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            {% endif %} {% endfor %}
+            <tr>
+              <td colspan="7">
+                <center>
+                  <input class="btn btn-primary" type="submit" value="submit" />
+                </center>
+              </td>
+            </tr>
+          </table>
+        </form>
+        {% else %}
+        <h3>No customers to Display!!</h3>
+        {% endif %}
+      </div>
+    </center>
 
-          <td>{{ customer['query'] }}</td>
-          <td>
-            {% if customer['review_status'] == 1 %} Reviewed {% else %} Not yet
-            Reviewed {% endif %}
-          </td>
-          <td>{{ customer['assigned_agent'] }}</td>
-          <td>
-            <select name="agent_name">
-              <option value="none">Select agent</option>
-              {% for agent in session['agent'] %}
-              <option value="{{ agent['username'] }}">
-                {{ agent['username'] }}
-              </option>
-              {% endfor %}
-            </select>
-          </td>
-        </tr>
-        {% endif %} {% endfor %}
-        <tr>
-          <td colspan="7">
-            <center>
-              <input class="btn btn-primary" type="submit" value="submit" />
-            </center>
-          </td>
-        </tr>
-      </table>
-    </form>
+    <center>
+      <div class="container mt-5">
+        <h1>Available Agents</h1><br>
+        <table class="">
+          <tr><th>Agent Name</th></tr>
+          {% for agent in session['agent'] %}
+          <tr>
+            <td>{{ agent['username'] }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+
+        {% else %}
+        <h1>UnIdentified User</h1>
+        {% endif %}
+      </div>
+    </center>
+    {%endblock%}
   </div>
-  {% else %}
-  <h3>No customers to Display!!</h3>
-  {% endif %}
-</center>
-
-<center>
-  <h1>Available Agents</h1>
-
-  <table>
-    {% for agent in session['agent'] %}
-    <tr>
-      <td>{{ agent['username'] }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-</center>
-{% else %}
-<h1>UnIdentified User</h1>
-{% endif %} {%endblock%}
+</div>

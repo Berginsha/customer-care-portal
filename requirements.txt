@@ -1,3 +1,5 @@
 PyMysql
 flask
 sendgrid
+waitress
+cryptography
