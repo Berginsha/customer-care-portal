@@ -1,0 +1,34 @@
+{% extends 'base.html' %}{% block title %}Loan Calculator{% endblock %} {% block
+content %}
+<div class="col-sm-7"><h1>Loan Calculator</h1>
+    <br>
+<label class="form-label" for="loanAmount">Loan Amount:</label>
+<input class="form-control" type="number" id="loanAmount" />
+<label class="form-label" for="interestRate">Interest Rate (%):</label>
+<input class="form-control" type="number" id="interestRate" />
+<label class="form-label" for="loanTerm">Loan Term (years):</label>
+<input class="form-control" type="number" id="loanTerm" />
+<br>
+<button class="btn btn-primary" onclick="calculateLoan()">Calculate</button>
+<br><br>
+<label class="form-label" for="monthlyPayment">Monthly Payment:</label>
+<input class="form-control" type="text" id="monthlyPayment" disabled />
+<br />
+<label class="form-label" for="totalPayment">Total Payment:</label>
+<input class="form-control" type="text" id="totalPayment" disabled />
+<script>
+  function calculateLoan() {
+    var loanAmount = document.getElementById("loanAmount").value;
+    var interestRate = document.getElementById("interestRate").value / 100 / 12;
+    var loanTerm = document.getElementById("loanTerm").value * 12;
+
+    var monthlyPayment =
+      (loanAmount * interestRate) / (1 - Math.pow(1 + interestRate, -loanTerm));
+    var totalPayment = monthlyPayment * loanTerm;
+
+    document.getElementById("monthlyPayment").value = monthlyPayment.toFixed(2);
+    document.getElementById("totalPayment").value = totalPayment.toFixed(2);
+  }
+</script></div>
+
+{% endblock%}

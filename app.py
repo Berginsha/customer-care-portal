@@ -208,6 +208,10 @@ def complaint():
         return render_template('complaint.html')
 
 
+@app.route('/loanCalculator',methods=["GET"])
+def loan_calculator():
+    return render_template('loanCalculator.html')
+
 @app.route('/query',methods=["POST","GET"])
 def query():
     if request.method == "POST":
@@ -298,7 +302,7 @@ def agent_submit_reply():
         combined = zip(names, text, emails)
         print(names,text,emails)
         for item in combined:
-            if not item[1] == None:
+            if not item[1] == '':
                 try:
                     context = mail_templates.mail_agent_reply(item[0])
                     mailing.send_mail(f"{session['agent']['username'].capitalize()} from Bankare",
