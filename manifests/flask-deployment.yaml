@@ -1,12 +1,4 @@
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: flask
-  labels:
-    istio-injection: enabled
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,10 +14,13 @@ spec:
       labels:
         app: flask
     spec:
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: docker-flask-secret
       containers:
         - name: flask-app
-          image: python:3.9.16-slim
-          imagePullPolicy: Always
+          image: docker.io/berginv/flask-app:v2
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
           env:

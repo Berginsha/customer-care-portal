@@ -79,7 +79,7 @@ def verify():
     if request.method == "POST":
         otp = request.form.get('otp')
         if session['otp'] == otp:
-            sql = "insert into user (username, email, password) values(%s,%s,%s)"
+            sql = "insert into user (username, email, password,bank) values(%s,%s,%s,'iob')"
             values = (session['name'], session['email'], session['password'])
             cursor.execute(sql, values)
             connection.commit()
@@ -95,12 +95,12 @@ def verify():
 def agent_session_refresh():
     cursor.execute(
         "select * from user where user.assigned_agent=%s and user.review_status=0", (session['agent']['username'],))
-
     session['customer'] = cursor.fetchall()
     print(session['customer'])
 
 
 def user_session_refresh():
+    print('refresh success')
     sql = "select user.*,bank.bank_email from user inner join bank on user.bank=bank.bank_name where user.username=%s"
     cursor.execute(sql, (session['customer']['username'],))
     session['customer'] = cursor.fetchone()
@@ -180,14 +180,13 @@ def dashboard():
     return render_template('dashboard.html')
 
 
-
-
 @app.route('/user/complaints', methods=["POST", "GET"])
 def complaint():
-    if request.method == "POST":
+    if request.method == "POST" and session['role'] == 'user':
         topic = str(request.form['topic'])
         description = request.form['desc']
         email = session['customer']['bank_email']
+        # banks=
         values = (session['customer']['username'],
                   session['customer']['bank'], topic, description)
         try:
@@ -208,13 +207,14 @@ def complaint():
         return render_template('complaint.html')
 
 
-@app.route('/loanCalculator',methods=["GET"])
+@app.route('/loanCalculator', methods=["GET"])
 def loan_calculator():
     return render_template('loanCalculator.html')
 
-@app.route('/query',methods=["POST","GET"])
+
+@app.route('/query', methods=["POST", "GET"])
 def query():
-    if request.method == "POST":
+    if request.method == "POST" and session['role'] == 'user':
         ticket = session['ticket'] = random_generator.alphanumeric()
         query = request.form['query']
         feature = request.form['feature']
@@ -243,13 +243,17 @@ def logout():
 
 @app.route('/querying', methods=['POST', 'GET'])
 def admin_assign_customer():
-    if request.method == "POST":
+    if request.method == "POST" and session['role'] == 'admin':
         agents = tuple(request.form.getlist('agent_name'))
         usernames = tuple(request.form.getlist('customer_name'))
         emails = tuple(request.form.getlist('email'))
         print(agents, usernames, emails)
-        combined = zip(agents, usernames, emails)
-        print(combined)
+        combined = tuple(zip(agents, usernames, emails))
+        # sql="UPDATE user SET assigned_agent = CASE"
+        # for item in enumerate(combined):
+        #     if  not item[0] == 'none':
+        #         sql += f" WHEN username = {item[1]} THEN {item[0]}"
+        # sql += " END"
         for item in combined:
             if not item[0] == 'none':
                 try:
@@ -267,9 +271,6 @@ def admin_assign_customer():
                 connection.commit()
                 flash('Allotments updated Successfully')
                 return redirect(url_for('dashboard'))
-            else:
-                flash('No changes made')
-                return redirect(url_for('dashboard'))
     else:
         flash('Unauthorized !!')
         return redirect(url_for('home'))
@@ -277,7 +278,7 @@ def admin_assign_customer():
 
 @app.route('/addAgent', methods=['POST', 'GET'])
 def add_agent():
-    if request.method == 'POST':
+    if request.method == 'POST' and session['role'] == 'admin':
         agent_name = request.form['agent_name']
         agent_password = request.form['agent_password']
         try:
@@ -300,7 +301,7 @@ def agent_submit_reply():
         text = tuple(request.form.getlist('text'))
         emails = tuple(request.form.getlist('email'))
         combined = zip(names, text, emails)
-        print(names,text,emails)
+        print(names, text, emails)
         for item in combined:
             if not item[1] == '':
                 try:

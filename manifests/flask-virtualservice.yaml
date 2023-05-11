@@ -1,0 +1,18 @@
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: flask-virtualservice
+  namespace: istio-system
+spec:
+  hosts:
+  - 'app.bankare.in'
+  gateways:
+  - gateway
+  http:
+  - route:
+    - destination:
+        port:
+          number: 5000
+        host: flask-service.flask.svc.cluster.local

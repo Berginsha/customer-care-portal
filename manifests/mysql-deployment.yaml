@@ -1,19 +1,11 @@
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mysql
-  labels:
-    istio-injection: enabled
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql-deployment
   namespace: mysql
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: mysql
@@ -22,6 +14,36 @@ spec:
       labels:
         app: mysql
     spec:
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: docker-mysql-secret
+      # initContainers:
+      #   - name: init
+      #     image: mysql:8.0.32-debian
+      #     imagePullPolicy: IfNotPresent
+      #     env:
+      #       - name: MYSQL_ROOT_PASSWORD
+      #         valueFrom:
+      #           secretKeyRef:
+      #             name: mysql-secret
+      #             key: mysql_db_password
+      #       - name: MYSQL_DATABASE
+      #         valueFrom:
+      #           secretKeyRef:
+      #             name: mysql-secret
+      #             key: mysql_db_database
+      #       - name: MYSQL_AUTHENTICATION_PLUGIN
+      #         value: mysql_native_password
+      #     command:
+      #       - "/bin/sh"
+      #       - "-c"
+      #       - |
+      #         'mysql -h localhost -u root -P 3306 -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /var/lib/mysql/table_schema.sql;
+      #          rm -rf /var/lib/mysql/table_schema.sql'
+      #     volumeMounts:
+      #       - name: data
+      #         mountPath: /var/lib/mysql
+      #         subPath: table_schema.sql
       containers:
         - name: mysql-app
           image: mysql:8.0.32-debian
@@ -39,6 +61,8 @@ spec:
                 secretKeyRef:
                   name: mysql-secret
                   key: mysql_db_database
+            - name: MYSQL_AUTHENTICATION_PLUGIN
+              value: mysql_native_password
           resources:
             limits:
               cpu: 250m
@@ -46,13 +70,17 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/mysql
+            # - name: mysqlfile
+            #   mountPath: /var/lib/mysql/table_schema.sql
+            #   subPath: table_schema.sql
+            #   readOnly: false
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: mysql-claim
-          # hostPath:
-          #   type: DirectoryOrCreate
-          #   path: /data
+        # - name: mysqlfile
+        #   secret:
+        #     secretName: mysql-schema
 
 ---
 apiVersion: v1
@@ -78,6 +106,7 @@ metadata:
   name: mysql-service
   namespace: mysql
 spec:
+  type: NodePort
   ports:
     - port: 3306
       targetPort: 3306
