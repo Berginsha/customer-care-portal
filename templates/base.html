@@ -113,6 +113,12 @@
                 <span class="text nav-text">Add Agent</span>
               </a>
             </li>
+            <li>
+              <a href="{{url_for('del_agent')}}">
+                <i class='bx bxs-user-x icon'></i>
+                <span class="text nav-text">Delete Agent</span>
+              </a>
+            </li>
             {% endif %} {% else %}
             <li>
               <a href="{{url_for('register')}}">

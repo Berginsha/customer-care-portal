@@ -1,10 +1,11 @@
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: mysql-deployment
   namespace: mysql
 spec:
+  serviceName: mysql-service
   replicas: 1
   selector:
     matchLabels:
@@ -17,33 +18,6 @@ spec:
       restartPolicy: Always
       imagePullSecrets:
         - name: docker-mysql-secret
-      # initContainers:
-      #   - name: init
-      #     image: mysql:8.0.32-debian
-      #     imagePullPolicy: IfNotPresent
-      #     env:
-      #       - name: MYSQL_ROOT_PASSWORD
-      #         valueFrom:
-      #           secretKeyRef:
-      #             name: mysql-secret
-      #             key: mysql_db_password
-      #       - name: MYSQL_DATABASE
-      #         valueFrom:
-      #           secretKeyRef:
-      #             name: mysql-secret
-      #             key: mysql_db_database
-      #       - name: MYSQL_AUTHENTICATION_PLUGIN
-      #         value: mysql_native_password
-      #     command:
-      #       - "/bin/sh"
-      #       - "-c"
-      #       - |
-      #         'mysql -h localhost -u root -P 3306 -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < /var/lib/mysql/table_schema.sql;
-      #          rm -rf /var/lib/mysql/table_schema.sql'
-      #     volumeMounts:
-      #       - name: data
-      #         mountPath: /var/lib/mysql
-      #         subPath: table_schema.sql
       containers:
         - name: mysql-app
           image: mysql:8.0.32-debian
@@ -70,34 +44,39 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/mysql
-            # - name: mysqlfile
-            #   mountPath: /var/lib/mysql/table_schema.sql
-            #   subPath: table_schema.sql
-            #   readOnly: false
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
       volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: mysql-claim
-        # - name: mysqlfile
-        #   secret:
-        #     secretName: mysql-schema
+        - name: initdb
+          secret:
+            secretName: mysql-schema
+          
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 1Gi
 
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-claim
-  namespace: mysql
-  labels:
-    app: mysql
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 1Gi
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: mysql-claim
+#   namespace: mysql
+#   labels:
+#     app: mysql
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   volumeMode: Filesystem
+#   storageClassName: local-path
+#   resources:
+#     requests:
+#       storage: 1Gi
 
 ---
 apiVersion: v1

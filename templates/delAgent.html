@@ -1,0 +1,25 @@
+{%extends 'base.html'%} {%block title%} Add Admin Page {%endblock%} {%block
+content%}
+<div class="container pd-20">
+  <h1 style="margin-top: 100px">Delete Agent account</h1>
+  <form action="{{url_for('del_agent')}}" method="POST">
+    <div class="form-group">
+      <label class="form-label">Agent Name:</label>
+      <select class="form-select" name="agent_name">
+        {% for agent in session['agent'] %}
+        <option value="{{agent['username']}}">{{agent['username'].capitalize()}}</option>
+        {%endfor%}
+      </select>
+    </div>
+    <br>
+    <div class="form-group">
+      <input class="btn btn-success mr-10" type="submit" value="submit" />
+      <input class="btn btn-danger" type="reset" value="clear" />
+    </div>
+    <br />
+    <a href="{{url_for('home')}}" class="btn btn-primary pd-10"
+      >< Back to Home</a
+    >
+  </form>
+</div>
+{%endblock%}

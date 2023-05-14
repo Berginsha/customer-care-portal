@@ -1,4 +1,5 @@
-import pymysql.cursors
+import pymysql.cursors 
+import pymysql.err as e
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from app import mailing, random_generator, mail_templates
@@ -9,6 +10,9 @@ from waitress import serve
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'helloworld'
+app.config['SESSION_PERMANENT']=False
+
+
 connection = pymysql.connect(
     host=os.getenv('mysql_db_endpoint'),
     user=os.getenv('mysql_db_username'),
@@ -289,9 +293,27 @@ def add_agent():
             return redirect(url_for('add_agent'))
         connection.commit()
         flash('Successfully added Agent')
+        admin_refresh_session()
         return redirect(url_for('add_agent'))
     else:
         return render_template('addAgent.html')
+
+
+@app.route('/delAgent',methods=["POST","GET"])
+def del_agent():
+    if request.method == "POST":
+        agentName = request.form['agent_name']
+        try:
+            cursor.execute('delete from agent where username = %s',(agentName,))
+            admin_refresh_session()
+        except:
+            flash('Error deleting agent')
+            return redirect(url_for('del_agent'))
+        flash('Agent Deleted')
+        return redirect(url_for('del_agent'))
+    else:
+        return render_template('delAgent.html')
+    
 
 
 @app.route('/executing', methods=['POST', 'GET'])
@@ -320,6 +342,14 @@ def agent_submit_reply():
         flash('Unauthorized !')
         return redirect(url_for('home'))
 
+
+@app.errorhandler(e.OperationalError)
+def mysql_error():
+    return "check whether mysql server is up"
+
+@app.errorhandler(e.ProgrammingError)
+def mysql_program_error():
+    return "Restarting the application may fix this"
 
 mode = str(sys.argv[1])
 

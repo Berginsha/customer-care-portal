@@ -1,6 +1,6 @@
 {% extends 'base.html' %} {% block title %}Query{% endblock %} {% block content
 %}
-
+<div class="alert alert-danger" role="alert" id="warn"></div>
 <div class="container pd-20">
   <h1>Create a Query</h1>
   <form action="{{url_for('query')}}" method="POST">
@@ -24,11 +24,29 @@
     <div class="form-group">
       <label class="form-label">Enter your query : </label>
       <div class="col-sm-5">
-        <textarea class="form-control" name="query" rows="3"></textarea>
+        <textarea
+          id="validation"
+          class="form-control"
+          name="query"
+          rows="3"
+        ></textarea>
       </div>
     </div>
-    <br>
+    <br />
     <input class="btn btn-success" type="submit" value="submit" />
   </form>
 </div>
+<script>
+  var text = document.getElementById("validation");
+  var popup = document.getElementById("warn");
+  popup.style.display = "none";
+  text.oninput = function () {
+    if (text.value.length > 150) {
+      popup.style.display = "block";
+      popup.innerHTML = "Query should be less than 150 characters";
+    } else {
+      popup.style.display = "none";
+    }
+  };
+</script>
 {%endblock%}
