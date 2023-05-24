@@ -5,7 +5,7 @@ metadata:
   name: flask-deployment
   namespace: flask
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: flask
@@ -19,7 +19,7 @@ spec:
         - name: docker-flask-secret
       containers:
         - name: flask-app
-          image: docker.io/berginv/flask-app:v2
+          image: docker.io/berginv/flask-app:v4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000

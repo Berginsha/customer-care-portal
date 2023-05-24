@@ -5,9 +5,10 @@
     <div>You have successfully logged in as {{ session['role'] }}</div>
   </div>
 </center>
+
 {% if session['role'] =='user' %}
 <center>
-  {% set customer = session['customer'] %}
+  {% set customer = session['customer'][0] %}
   <h1 class="heading">Hello {{ customer['username'] }}</h1>
   {% if customer['query'] == None %}
   <h1>You Haven't made any Queries</h1>

@@ -15,6 +15,7 @@ content%}
     <div class="col-sm-5">
       <label class="form-label">Describe your problem:</label
       ><textarea
+        id="validation"
         class="form-control col-md-10"
         name="desc"
         rows="4"
@@ -35,4 +36,17 @@ content%}
     </div>
   </center>
 </form>
+<script>
+  var text = document.getElementById("validation");
+  var popup = document.getElementById("warn");
+  text.oninput = function () {
+    if (text.value.length > 300) {
+      popup.style.opacity = 1;
+      popup.style.display = "block";
+      popup.innerHTML = "Description should be less than 300 characters";
+    } else {
+      popup.style.display = "none";
+    }
+  };
+</script>
 {%endblock%}

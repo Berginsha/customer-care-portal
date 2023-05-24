@@ -1,4 +1,4 @@
-import pymysql.cursors 
+import pymysql.cursors
 import pymysql.err as e
 import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
@@ -10,7 +10,7 @@ from waitress import serve
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'helloworld'
-app.config['SESSION_PERMANENT']=False
+app.config['SESSION_PERMANENT'] = False
 
 
 connection = pymysql.connect(
@@ -190,7 +190,6 @@ def complaint():
         topic = str(request.form['topic'])
         description = request.form['desc']
         email = session['customer']['bank_email']
-        # banks=
         values = (session['customer']['username'],
                   session['customer']['bank'], topic, description)
         try:
@@ -253,11 +252,6 @@ def admin_assign_customer():
         emails = tuple(request.form.getlist('email'))
         print(agents, usernames, emails)
         combined = tuple(zip(agents, usernames, emails))
-        # sql="UPDATE user SET assigned_agent = CASE"
-        # for item in enumerate(combined):
-        #     if  not item[0] == 'none':
-        #         sql += f" WHEN username = {item[1]} THEN {item[0]}"
-        # sql += " END"
         for item in combined:
             if not item[0] == 'none':
                 try:
@@ -299,21 +293,24 @@ def add_agent():
         return render_template('addAgent.html')
 
 
-@app.route('/delAgent',methods=["POST","GET"])
+@app.route('/delAgent', methods=["POST", "GET"])
 def del_agent():
     if request.method == "POST":
         agentName = request.form['agent_name']
         try:
-            cursor.execute('delete from agent where username = %s',(agentName,))
+            cursor.execute(
+                'delete from agent where username = %s', (agentName,))
+            cursor.execute(
+                'update user set assigned_agent=NULL where review_status=0 and assigned_agent=%s', (agentName,))
             admin_refresh_session()
         except:
             flash('Error deleting agent')
             return redirect(url_for('del_agent'))
+        connection.commit()
         flash('Agent Deleted')
         return redirect(url_for('del_agent'))
     else:
         return render_template('delAgent.html')
-    
 
 
 @app.route('/executing', methods=['POST', 'GET'])
@@ -343,13 +340,27 @@ def agent_submit_reply():
         return redirect(url_for('home'))
 
 
+@app.errorhandler(404)
+def not_found(error):
+    flash('URL not found')
+    return redirect(url_for('home'))
+
+
+@app.errorhandler(500)
+def server_error(error):
+    flash('Server Error')
+    return redirect(url_for('home'))
+
+
 @app.errorhandler(e.OperationalError)
 def mysql_error():
     return "check whether mysql server is up"
 
+
 @app.errorhandler(e.ProgrammingError)
 def mysql_program_error():
     return "Restarting the application may fix this"
+
 
 mode = str(sys.argv[1])
 

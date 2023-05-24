@@ -61,23 +61,6 @@ spec:
         requests:
           storage: 1Gi
 
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: mysql-claim
-#   namespace: mysql
-#   labels:
-#     app: mysql
-# spec:
-#   accessModes:
-#     - ReadWriteOnce
-#   volumeMode: Filesystem
-#   storageClassName: local-path
-#   resources:
-#     requests:
-#       storage: 1Gi
-
 ---
 apiVersion: v1
 kind: Service

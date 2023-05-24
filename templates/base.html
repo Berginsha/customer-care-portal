@@ -30,6 +30,7 @@
     ></script>
 
     <title>{%block title%} {%endblock%}</title>
+    {%block links%}{% endblock %}
   </head>
   <body>
     <nav class="sidebar close">
@@ -115,7 +116,7 @@
             </li>
             <li>
               <a href="{{url_for('del_agent')}}">
-                <i class='bx bxs-user-x icon'></i>
+                <i class="bx bxs-user-x icon"></i>
                 <span class="text nav-text">Delete Agent</span>
               </a>
             </li>
@@ -164,8 +165,17 @@
       <div class="container mt-5">
         {% with messages = get_flashed_messages() %} {% if messages %} {% for
         message in messages %}
-        <center><h2>{{ message }}</h2></center>
-        {% endfor %} {% endif %} {% endwith %} {%block content%} {%endblock%}
+        <div class="alert alert-primary" role="alert">
+          <center>{{message}}</center>
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+        <div
+          class="alert alert-danger"
+          role="alert"
+          id="warn"
+          style="display: none"
+        ></div>
+        {%block content%} {%endblock%}
       </div>
     </section>
     <script src="{{ url_for('static',filename='js/script.js') }}"></script>

@@ -1,5 +1,7 @@
-{% extends 'base.html' %} {%block title%} Registration page {%endblock%} {%block
-content%}
+{% extends 'base.html' %} {%block title%} Registration page {%endblock%}{%block
+links%}{#
+<script src="{{ url_for('static',filename='js/register.js') }}"></script>
+#}{%endblock%} {%block content%}
 <div class="container">
   <h1 style="margin-top: 100px">Registration page</h1>
   <form name="register" action="{{url_for('register')}}" method="POST">
@@ -9,7 +11,14 @@ content%}
         <div class="input-group-prepend">
           <div class="input-group-text">@</div>
         </div>
-        <input type="text" class="form-control" name="name" placeholder="Username" required/>
+        <input
+          type="text"
+          class="form-control"
+          name="name"
+          placeholder="Username"
+          id="username"
+          required
+        />
       </div>
     </div>
     <div class="form-group col-sm-5">
@@ -18,7 +27,14 @@ content%}
         <div class="input-group-prepend">
           <div class="input-group-text">.com</div>
         </div>
-        <input type="email" class="form-control" name="email" placeholder="Email" required/>
+        <input
+          type="email"
+          class="form-control"
+          id="email"
+          name="email"
+          placeholder="Email"
+          required
+        />
       </div>
     </div>
     <div class="form-group col-sm-5">
@@ -27,7 +43,14 @@ content%}
         <div class="input-group-prepend">
           <div class="input-group-text">+91</div>
         </div>
-        <input type="text" class="form-control" name="phone" placeholder="Phone" required/>
+        <input
+          type="number"
+          class="form-control"
+          name="phone"
+          id="contact"
+          placeholder="Phone"
+          required
+        />
       </div>
     </div>
     <div class="form-group col-sm-5">
@@ -38,6 +61,13 @@ content%}
         name="password"
         type="password"
         required
+        title="The password should be:
+
+        at least one lowercase letter
+        at least one uppercase letter
+        at least one digit
+        at least one special character
+        at least 8 characters long"
       />
       <label>confirm Password:</label
       ><input
@@ -49,9 +79,14 @@ content%}
       />
     </div>
     <br />
-    <input name="submit" class="btn btn-success" type="submit" value="submit" />
+    <input
+      name="submit"
+      id="submit"
+      class="btn btn-success"
+      type="submit"
+      value="submit"
+    />
     <input class="btn btn-danger" type="reset" value="clear" />
-
     <div class="form-group col-sm-5">
       <br />
       <a class="btn btn-primary" href="{{ url_for('login') }}"
@@ -60,4 +95,68 @@ content%}
     </div>
   </form>
 </div>
+<script>
+  var username = document.getElementById("username");
+  var contact = document.getElementById("contact");
+  var email = document.getElementById("email");
+  var warn = document.getElementById("warn");
+  var button = document.getElementById("submit");
+  var password1 = document.getElementById("p1");
+  var password2 = document.getElementById("p2");
+  username.oninput = function () {
+    var name_pattern = /[a-zA-Z0-9]+$/;
+    if (name_pattern.test(username.value) == true) {
+      warn.style.display = "none";
+    } else {
+      warn.style.display = "block";
+      warn.innerHTML = "Username should not contain special characters";
+    }
+  };
+  contact.onblur = function () {
+    if (contact.value.length == 0) {
+      warn.style.display = "none";
+    } else if (contact.value.length != 10) {
+      warn.style.display = "block";
+      warn.innerHTML = "Contact number should be of 10 digits";
+    } else {
+      warn.style.display = "none";
+    }
+  };
+  email.onblur = function () {
+    var email_pattern = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (email.value.length == 0) {
+      return true;
+    } else if (email_pattern.test(email.value) == true) {
+      warn.style.display = "none";
+    } else {
+      warn.style.display = "block";
+      warn.innerHTML = "Invalid Email Address";
+    }
+  };
+  password1.onblur = function () {
+    var password_pattern =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (password1.value.length == 0) {
+      warn.style.display = "none";
+    } else if (password_pattern.test(password1.value) != true) {
+      warn.style.display = "block";
+      warn.innerHTML = "Weak password";
+    } else {
+      warn.style.display = "none";
+    }
+  };
+  password2.oninput = function () {
+    if (password1.value.length === password2.value.length) {
+      if (password1.value === password2.value) {
+        warn.style.display = "none";
+        return true;
+      } else {
+        warn.style.display = "block";
+        warn.innerHTML = "Passwords Do not match";
+      }
+    } else {
+      warn.innerHTML = "Passwords do not match";
+    }
+  };
+</script>
 {%endblock%}
