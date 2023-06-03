@@ -55,7 +55,7 @@ def register():
             flash('passwords do not match')
             return redirect(url_for('register'))
         cursor.execute(f'select * from user where username="{name}"')
-        rs = cursor.fetchall()
+        rs = cursor.fetchone()
         print(rs)
         if rs:
             flash('Account already Exists')

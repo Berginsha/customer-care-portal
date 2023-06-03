@@ -59,7 +59,7 @@ spec:
       storageClassName: local-path
       resources:
         requests:
-          storage: 1Gi
+          storage: 500Mi
 
 ---
 apiVersion: v1

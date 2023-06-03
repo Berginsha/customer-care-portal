@@ -8,7 +8,7 @@
 
 {% if session['role'] =='user' %}
 <center>
-  {% set customer = session['customer'][0] %}
+  {% set customer = session['customer'] %}
   <h1 class="heading">Hello {{ customer['username'] }}</h1>
   {% if customer['query'] == None %}
   <h1>You Haven't made any Queries</h1>
